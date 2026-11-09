@@ -1,8 +1,6 @@
 import * as m from 'zigbee-herdsman-converters/lib/modernExtend';
 import {presets as e} from 'zigbee-herdsman-converters/lib/exposes';
 
-// The identity below comes from the supplied ZHA quirk. Confirm both strings
-// against the actual Zigbee2MQTT device information before deployment.
 const sceneAction = {
     cluster: 'genMultistateInput',
     type: ['attributeReport'],
@@ -20,7 +18,6 @@ const actions = [1, 2, 3, 4].flatMap((key) =>
 );
 
 const lightExtend = m.light({colorTemp: {range: [153, 370], startup: false}, color: {modes: ['xy', 'hs']}, effect: false, powerOnBehavior: false, configureReporting: true});
-// Keep the converters and configure (which reads colorCapabilities), not its fixed expose.
 lightExtend.exposes = [];
 
 function lightExposes(device) {
@@ -28,7 +25,6 @@ function lightExposes(device) {
     const endpoint = device?.getEndpoint?.(1);
     if (endpoint?.supportsInputCluster('lightingColorCtrl')) {
         const capabilities = endpoint.getClusterAttributeValue('lightingColorCtrl', 'colorCapabilities');
-        // Missing or invalid cached capabilities cannot identify the supported modes.
         if (Number.isInteger(capabilities) && capabilities >= 0 && capabilities <= 0xffff) {
             if (capabilities & 0x10) light.withColorTemp([153, 370]);
             const modes = [];
@@ -45,12 +41,11 @@ export default {
     model: 'YSRSAI-Light-PIR-Lux-Z2M',
     vendor: 'YSRSAI',
     description: 'Light, occupancy, illuminance and four scene keys',
-    // 153..370 is appropriate only for firmware configured for 2700..6500 K.
-    // RGB, RGBW and RGBCW may all report 0x19 and cannot be distinguished here.
+    // Configure occupancy before light configuration, which can fail independently.
+    // Color temperature range assumes 2700..6500 K firmware.
     extend: [
-        lightExtend,
-        // Bind occupancy and configure reports on supported sensor endpoints.
         m.occupancy({reporting: true, reportingConfig: {min: 0, max: 300, change: 0}}),
+        lightExtend,
         m.illuminance({reporting: false}),
     ],
     fromZigbee: [sceneAction],
