@@ -49,7 +49,8 @@ export default {
     // RGB, RGBW and RGBCW may all report 0x19 and cannot be distinguished here.
     extend: [
         lightExtend,
-        m.occupancy({reporting: false}),
+        // Bind occupancy and configure reports on supported sensor endpoints.
+        m.occupancy({reporting: true, reportingConfig: {min: 0, max: 300, change: 0}}),
         m.illuminance({reporting: false}),
     ],
     fromZigbee: [sceneAction],
